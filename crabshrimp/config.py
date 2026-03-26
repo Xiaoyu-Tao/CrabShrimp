@@ -49,6 +49,10 @@ class CrabShrimpConfig(BaseModel):
     # 检查点 3：Verifier 判定失败后，人工决定是否继续
     hitl_on_verify_fail: bool = True
 
+    # ── 显示 ──────────────────────────────────────────────────
+    # 是否启用 Rich 实时面板（终端可视化）
+    display_enabled: bool = True
+
     # ── 路径 ──────────────────────────────────────────────────
     trace_dir: str = "./traces"
     db_path: str = "./crabshrimp.db"
@@ -82,6 +86,7 @@ class CrabShrimpConfig(BaseModel):
             hitl_on_plan=_bool("CRABSHRIMP_HITL_ON_PLAN", True),
             hitl_on_critical=_bool("CRABSHRIMP_HITL_ON_CRITICAL", True),
             hitl_on_verify_fail=_bool("CRABSHRIMP_HITL_ON_VERIFY_FAIL", True),
+            display_enabled=_bool("CRABSHRIMP_DISPLAY", True),
             trace_dir=os.getenv("CRABSHRIMP_TRACE_DIR", "./traces"),
             db_path=os.getenv("CRABSHRIMP_DB_PATH", "./crabshrimp.db"),
         )

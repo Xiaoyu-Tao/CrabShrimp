@@ -116,6 +116,13 @@ def cli():
     default=False,
     help="Skip Verifier failure checkpoint even when HITL is enabled.",
 )
+# ── 显示开关 ───────────────────────────────────────────────────
+@click.option(
+    "--no-display",
+    is_flag=True,
+    default=False,
+    help="Disable Rich live panel; fall back to plain log output.",
+)
 # ── v0.3 演化开关 ──────────────────────────────────────────────
 @click.option(
     "--no-skill-extraction",
@@ -140,7 +147,7 @@ def run(task, model, step_limit, token_budget, trace_dir, db_path,
         hitl, no_hitl_plan, no_hitl_critical, no_hitl_verify,
         no_coral_meeting, no_classify, no_trace, no_resource_guard,
         no_context_isolation, no_workspace_isolation, no_exec_isolation,
-        no_skill_extraction, no_skill_injection, bench_threshold):
+        no_display, no_skill_extraction, no_skill_injection, bench_threshold):
     """Run a task with the multi-agent team."""
     from crabshrimp.config import CrabShrimpConfig
     from crabshrimp.runtime.runner import TaskRunner
@@ -165,6 +172,7 @@ def run(task, model, step_limit, token_budget, trace_dir, db_path,
         hitl_on_plan=not no_hitl_plan,
         hitl_on_critical=not no_hitl_critical,
         hitl_on_verify_fail=not no_hitl_verify,
+        display_enabled=not no_display,
         trace_dir=trace_dir,
     )
 

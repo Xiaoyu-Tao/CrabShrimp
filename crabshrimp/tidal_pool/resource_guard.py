@@ -33,6 +33,14 @@ class ResourceGuard:
             print(f"[TidalPool] ⚠️  Token warning: {self._tokens_used}/{self._token_budget}")
 
     @property
+    def steps_used(self) -> int:
+        return self._steps_used
+
+    @property
+    def tokens_used(self) -> int:
+        return self._tokens_used
+
+    @property
     def remaining_steps(self) -> int:
         return max(0, self._step_limit - self._steps_used)
 

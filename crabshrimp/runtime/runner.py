@@ -8,6 +8,7 @@ from crabshrimp.communication.blackboard import AsyncBlackboard
 from crabshrimp.config import CrabShrimpConfig
 from crabshrimp.coral_meeting.meeting import CoralMeeting
 from crabshrimp.db import AgentRepository, MeetingRepository, RoleWeightRepository, SkillRepository, TaskRepository, get_connection
+from crabshrimp.display.rich_panel import RichDisplay
 from crabshrimp.dragon_king.orchestrator import DragonKing
 from crabshrimp.evolution.skill_extractor import SkillExtractor
 from crabshrimp.tidal_pool.shell_molting import ShellMolting
@@ -58,9 +59,16 @@ class TaskRunner:
         steps_count = 0
         collector: TraceCollector | None = None
 
+        display = RichDisplay(
+            task=task_description,
+            step_limit=cfg.step_limit,
+            token_budget=cfg.token_budget,
+            enabled=cfg.display_enabled,
+        )
+
         try:
             writer = TraceWriter(str(trace_path)) if trace_path is not None else NullTraceWriter()
-            with writer:
+            with writer, display:
                 collector = TraceCollector(
                     task_id=task_id,
                     writer=writer,
@@ -84,6 +92,7 @@ class TaskRunner:
                     config=cfg,
                     role_weight_repo=role_weight_repo,
                     human_gate=human_gate,
+                    display=display if cfg.display_enabled else None,
                 )
 
                 try:
