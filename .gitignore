@@ -1,0 +1,33 @@
+# 环境与密钥
+.env
+.env.local
+
+# 运行时产物
+traces/
+*.db
+*.jsonl
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
