@@ -213,7 +213,7 @@ def run(task, model, step_limit, token_budget, trace_dir, db_path,
 
     console.print(
         Panel(
-            f"[bold cyan]虾兵蟹将[/bold cyan] v0.3\n"
+            f"[bold cyan]虾兵蟹将[/bold cyan] v0.4\n"
             f"Model: [green]{model}[/green] | Steps: {step_limit} | Tokens: {token_budget}"
             + (f"\n{switch_line}" if switch_line else ""),
             title="🦐 CrabShrimp",
