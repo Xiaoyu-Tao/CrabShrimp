@@ -1,6 +1,4 @@
-# 虾兵蟹将（CrabShrimp）
-
-[English README](README_EN.md)
+# CrabShrimp
 
 <p align="center">
   <img src="./crabshrimp_logo.jpg" alt="CrabShrimp Logo" width="360"/>
@@ -12,91 +10,112 @@
 
 ---
 
-## 简介
+## Overview
 
-虾兵蟹将是一个面向**多智能体协同决策与自主演化**的开源 Agent 运行时框架。
+CrabShrimp is an open-source multi-agent runtime for **collaborative decision-making and autonomous evolution**.
 
-它解决的核心问题是：现有多智能体框架要么只关注"如何让多个 Agent 协同"，要么只研究"如何让 Agent 演化"，从未将两者统一设计。虾兵蟹将的设计哲学是让两者形成正向飞轮：
+Its core thesis is simple:
 
+> Most multi-agent frameworks focus on either coordination or evolution, but rarely design both as a single feedback loop.
+
+CrabShrimp treats them as a flywheel:
+
+```text
+Better collaboration -> richer traces -> stronger evolution -> better collaboration
 ```
-高质量协同 → 产生丰富 Trace → 驱动团队演化 → 演化后的 Agent 协同更高效
-```
+
+The current version already includes:
+
+- role-based multi-agent execution
+- critical-node deliberation through Coral-Meeting
+- resource governance through Tidal-Pool
+- SQLite-backed persistence
+- post-task evolution signals
+- skill extraction and injection
+- human-in-the-loop review checkpoints
 
 ---
 
-## 核心特性
+## Core Features
 
-### Dragon-King 动态决策引擎
-- 自动对任务进行分类（code / analysis / reasoning / writing / general）
-- LLM 生成结构化执行计划，动态分配 5 种 Agent 角色
-- 识别计划中的关键节点，触发 Coral-Meeting 集体审议
+### Dragon-King Dynamic Orchestrator
 
-### Coral-Meeting 协同决策协议
-6 步会议流程，在关键节点驱动多 Agent 达成共识：
+- Classifies tasks into `code`, `analysis`, `reasoning`, `writing`, or `general`
+- Generates a structured execution plan with role assignments
+- Detects critical nodes and triggers multi-agent deliberation
 
-| 步骤 | 内容 |
-|------|------|
-| Step 1 | 各方陈述立场 |
-| Step 2 | SyncP2P 交叉反思，向对方发送定向批评 |
-| Step 2.5 | 各方读取收到的批评，修订自己的立场 |
-| Step 3 | 按贡献分数加权投票 |
-| Step 4 | 裁决（平票时调用 LLM 仲裁） |
-| Step 5 | 共识写入 Trace |
+### Coral-Meeting Consensus Protocol
 
-### Shell-Molting 演化引擎
-任务结束后自动分析 Trace 信号，更新 Agent 贡献分：
+CrabShrimp uses a dedicated consensus layer for critical decisions:
 
-| 信号 | 归因目标 | 变化 |
-|------|----------|------|
-| Coral-Meeting 立场被采纳 | 胜出 Agent | +0.10 |
-| Verifier 判定 NOT VERIFIED | 最近上游非评估 Agent | −0.15 |
-| Critic 判定 REJECTED | 最近上游非评估 Agent | −0.10 |
-| 任务 stopped_early | 全体参与 Agent | −0.05 |
+| Step | Description |
+|------|-------------|
+| 1 | Each participant states its position |
+| 2 | Participants critique one another through SyncP2P |
+| 2.5 | Each participant receives targeted critiques |
+| 3 | Weighted voting based on contribution scores |
+| 4 | Arbitration if the top candidates tie |
+| 5 | Consensus is written to trace and persistence |
 
-贡献分影响 Coral-Meeting 投票权重，高贡献 Agent 的意见更受重视。
+### Shell-Molting Evolution Engine
 
-### Skill 知识库（v0.3）
-- **提取**：从成功步骤的 Trace 中自动提炼可复用推理技巧，按 `(role, task_category)` 存入 SQLite
-- **注入**：创建 Agent 时将历史最优 Skill 追加到 System Prompt，注入次数越多的 Skill 排名越高
-- 每个 `(role, category)` 槽位上限 10 条，防止过拟合
+After each task, CrabShrimp analyzes trace signals and updates agent contribution scores:
 
-### 拓扑调整（v0.3）
-- 跟踪每个 Agent 在 Coral-Meeting 中的历史胜率（`role_weights` 表）
-- `bench_threshold`（默认 0.5）：胜率低于阈值的 Agent 自动退出 Coral-Meeting
-- 新 Agent 默认胜率 1.0，给予公平起点
+| Signal | Attribution Target | Delta |
+|--------|--------------------|-------|
+| Coral-Meeting position adopted | winning agent | +0.10 |
+| Verifier returns `NOT VERIFIED` | nearest upstream producer | -0.15 |
+| Critic returns `REJECTED` | nearest upstream producer | -0.10 |
+| task stopped early | all producing agents | -0.05 |
 
-### Human-in-the-Loop（HITL）
-在关键检查点暂停执行，等待人工审核。三种操作：**[A] 批准** / **[E] 修改** / **[X] 终止**
+These contribution scores directly affect future Coral-Meeting voting weights.
 
-| 检查点 | 触发时机 | 支持操作 |
-|--------|----------|----------|
-| 执行计划审核 | 计划生成后、执行开始前 | A / X |
-| Coral-Meeting 共识审核 | 多智能体达成共识后 | A / E / X |
-| Verifier 失败介入 | Verifier 判定 NOT VERIFIED 后 | A / E / X |
+### Skill Memory and Injection
 
-默认关闭（`--hitl` 启用），不影响无人值守的自动化流程。
+- **Extraction**: reusable reasoning skills are distilled from successful trace steps and stored in SQLite
+- **Injection**: top historical skills are appended to an agent's system prompt before execution
+- Skills are stored per `(role, task_category)` bucket, with a cap to prevent overgrowth
 
-### Tidal-Pool 资源守护
-- Step Limit 硬限制：防止无限循环
-- Token Budget 硬限制：控制 API 开销
-- 80% 阈值软警告（仅触发一次）
-- 两种耗尽场景均触发 Summarizer 优雅退出，保证有输出
+### Topology Adaptation
 
-### 5 种预设 Agent 角色
+- Tracks per-agent historical win rates in Coral-Meeting
+- Uses `bench_threshold` to temporarily bench weak performers from future deliberation
+- New agents default to a fair starting win rate of `1.0`
 
-| 角色 | 职责 |
-|------|------|
-| Planner | 分析任务，制定执行计划 |
-| Executor | 具体执行子任务 |
-| Critic | 审查输出，发现问题与风险 |
-| Verifier | 核实结论的准确性 |
-| Summarizer | 汇总多步输出为最终结果 |
+### Human-in-the-Loop
+
+Optional review checkpoints pause execution for human approval, editing, or termination:
+
+| Checkpoint | Trigger | Supported Actions |
+|------------|---------|-------------------|
+| Plan review | after planning, before execution | approve / terminate |
+| Consensus review | after Coral-Meeting | approve / edit / terminate |
+| Verifier failure review | after verification failure | approve / edit / terminate |
+
+HITL is disabled by default and does not interfere with fully autonomous runs.
+
+### Tidal-Pool Resource Governance
+
+- hard step limit
+- hard token budget
+- 80% early warning threshold
+- graceful wrap-up through summarization when limits are hit
+
+### Built-in Roles
+
+| Role | Responsibility |
+|------|----------------|
+| Planner | analyze the task and prepare execution structure |
+| Executor | carry out the actual subtask |
+| Critic | identify flaws, risks, and missing pieces |
+| Verifier | independently validate correctness |
+| Summarizer | synthesize final output |
 
 ---
 
-## 快速开始
+## Quick Start
 
-### 安装
+### Installation
 
 ```bash
 git clone <repo-url>
@@ -104,22 +123,22 @@ cd crabshrimp
 pip install -e ".[dev]"
 ```
 
-### 配置
+### Configuration
 
-复制 `.env.example` 并填入你的 API Key：
+Copy the example environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-最简配置（直连 Anthropic）：
+Minimal setup for Anthropic:
 
 ```ini
 CRABSHRIMP_MODEL=claude-sonnet-4-6
 ANTHROPIC_API_KEY=sk-ant-xxx
 ```
 
-使用 OpenAI 兼容代理：
+Using an OpenAI-compatible proxy:
 
 ```ini
 CRABSHRIMP_MODEL=openai/claude-sonnet-4-6
@@ -127,61 +146,58 @@ OPENAI_API_KEY=sk-xxx
 CRABSHRIMP_API_BASE=https://api.example.com/v1
 ```
 
-### 运行任务
+### Run a Task
 
 ```bash
-crabshrimp run --task "分析 Transformer 注意力机制的核心思想"
+crabshrimp run --task "Explain the core idea behind Transformer attention"
 ```
 
-### 常用 CLI 选项
+### Common CLI Examples
 
 ```bash
-# 自定义资源限制
+# Custom resource limits
 crabshrimp run --task "..." --step-limit 10 --token-budget 50000
 
-# 指定模型
+# Change model
 crabshrimp run --task "..." --model gpt-4o
 
-# 关闭 Coral-Meeting（单 Agent 顺序执行，速度更快）
+# Disable Coral-Meeting
 crabshrimp run --task "..." --no-coral-meeting
 
-# 关闭 Skill 提取（不从 Trace 中学习）
+# Disable skill extraction
 crabshrimp run --task "..." --no-skill-extraction
 
-# 关闭 Skill 注入（不使用历史 Skill）
+# Disable skill injection
 crabshrimp run --task "..." --no-skill-injection
 
-# 调整拓扑筛选阈值（默认 0.5）
+# Lower the bench threshold
 crabshrimp run --task "..." --bench-threshold 0.3
 
-# 开启人在回路（在三个关键检查点等待人工确认）
+# Enable human-in-the-loop
 crabshrimp run --task "..." --hitl
 
-# 开启 HITL，但只在 Verifier 失败时介入
+# Only enable HITL on verifier failure
 crabshrimp run --task "..." --hitl --no-hitl-plan --no-hitl-critical
 
-# 不写 Trace 文件
+# Disable trace file output
 crabshrimp run --task "..." --no-trace
-
-# 查看所有选项
-crabshrimp run --help
 ```
 
-### 机制开关的三种方式
+### Three Ways to Configure Switches
 
-**CLI flag（临时生效）**
+**1. CLI flags**
 
 ```bash
 crabshrimp run --task "..." --no-coral-meeting --no-classify --no-trace
 ```
 
-**环境变量（当次 shell 会话）**
+**2. Environment variables**
 
 ```bash
 CRABSHRIMP_CORAL_MEETING=false CRABSHRIMP_TRACE=false crabshrimp run --task "..."
 ```
 
-**`.env` 文件（持久化配置）**
+**3. `.env` file**
 
 ```ini
 CRABSHRIMP_CORAL_MEETING=false
@@ -193,49 +209,51 @@ CRABSHRIMP_HITL_ON_PLAN=false
 
 ---
 
-## 项目结构
+## Project Structure
 
-```
+```text
 crabshrimp/
-├── config.py                # CrabShrimpConfig：全局配置与机制开关
+├── config.py                # global runtime configuration
 ├── cli/
-│   └── commands.py          # Click CLI（--no-* 开关）
+│   └── commands.py          # Click CLI entrypoints and switches
 ├── runtime/
-│   └── runner.py            # 任务运行器，组装所有模块
-├── dragon_king/             # 动态决策引擎
-│   ├── orchestrator.py      # DragonKing：主编排器 + 拓扑调整
-│   ├── classifier.py        # 任务分类器
-│   └── planner.py           # 执行计划生成器
-├── coral_meeting/           # 协同决策协议
-│   └── meeting.py           # CoralMeeting：6 步会议（含 SyncP2P + 立场修订）
-├── tidal_pool/              # 运行时守护
-│   ├── resource_guard.py    # Step & Token 双限
-│   ├── shell_molting.py     # 演化引擎：Trace 信号 → 贡献分 + role_weights
-│   └── workspace.py         # 工作空间隔离
+│   └── runner.py            # task runner and component assembly
+├── dragon_king/
+│   ├── orchestrator.py      # main orchestrator and topology logic
+│   ├── classifier.py        # task classifier
+│   └── planner.py           # execution plan generator
+├── coral_meeting/
+│   └── meeting.py           # critical-node deliberation protocol
+├── tidal_pool/
+│   ├── resource_guard.py    # step/token governance
+│   ├── shell_molting.py     # post-task evolution engine
+│   ├── human_gate.py        # human-in-the-loop checkpoints
+│   └── workspace.py         # isolated workspaces
 ├── evolution/
-│   └── skill_extractor.py   # Skill 提取器（LLM 提炼推理技巧）
+│   └── skill_extractor.py   # reusable skill extraction
 ├── agents/
-│   ├── base.py              # BaseAgent 抽象类
-│   ├── factory.py           # AgentFactory（含 Skill 注入）
-│   ├── registry.py          # AgentRegistry（SQLite 持久化）
-│   └── roles/               # 5 种角色实现
+│   ├── base.py              # BaseAgent abstraction
+│   ├── factory.py           # agent factory and skill injection
+│   ├── registry.py          # role registry and persistence integration
+│   └── roles/               # planner / executor / critic / verifier / summarizer
 ├── communication/
-│   ├── blackboard.py        # AsyncBlackboard：共享状态
-│   └── p2p.py               # SyncP2P：点对点消息队列
-├── db/                      # SQLite 数据层
-│   ├── agent_repo.py        # Agent 档案（含 contribution_score）
-│   ├── meeting_repo.py      # 会议记录
-│   ├── skill_repo.py        # Skill 知识库
-│   ├── role_weight_repo.py  # 拓扑胜率统计
-│   └── task_repo.py         # 任务摘要
+│   ├── blackboard.py        # shared state and topic-based messaging
+│   └── p2p.py               # point-to-point message queue
+├── db/
+│   ├── agent_repo.py
+│   ├── connection.py
+│   ├── meeting_repo.py
+│   ├── role_weight_repo.py
+│   ├── skill_repo.py
+│   └── task_repo.py
 ├── llm/
-│   ├── base.py              # BaseLLMClient 抽象
-│   ├── litellm_client.py    # LiteLLM 实现
-│   └── prompts/             # 各角色 System Prompt 模板
+│   ├── base.py              # abstract LLM client
+│   ├── litellm_client.py    # LiteLLM adapter
+│   └── prompts/             # role system prompts
 ├── trace/
-│   ├── writer.py            # JSONL 写入
-│   └── collector.py         # TraceCollector
-└── models/                  # Pydantic 数据模型
+│   ├── writer.py            # JSONL writer
+│   └── collector.py         # in-memory + persistent trace collection
+└── models/
     ├── agent_profile.py
     ├── trace.py
     └── message.py
@@ -243,23 +261,23 @@ crabshrimp/
 
 ---
 
-## SQLite 数据库
+## SQLite Persistence
 
-运行时自动创建 `crabshrimp.db`，包含 5 张表：
+At runtime, CrabShrimp creates `crabshrimp.db` and manages at least these tables:
 
-| 表 | 内容 |
-|----|------|
-| `agent_profiles` | Agent 档案，含 `contribution_score` |
-| `task_records` | 任务摘要（分类、步数、trace 路径） |
-| `meeting_outcomes` | Coral-Meeting 每次会议的胜出方 |
-| `skills` | Skill 知识库，含 `usage_count` 排序 |
-| `role_weights` | `(task_category, role, agent_id)` 胜率统计 |
+| Table | Purpose |
+|-------|---------|
+| `agent_profiles` | persistent agent profiles and contribution scores |
+| `task_records` | task summary, category, step count, trace path |
+| `meeting_outcomes` | Coral-Meeting winners |
+| `skills` | extracted skill memory with usage counts |
+| `role_weights` | historical win-rate tracking for topology adaptation |
 
 ---
 
-## Trace 格式
+## Trace Format
 
-每次任务执行在 `./traces/` 目录下生成一个 JSONL 文件，每行一个 `TraceStep`：
+Each task produces a JSONL trace file under `./traces/` unless trace persistence is disabled:
 
 ```json
 {
@@ -277,76 +295,81 @@ crabshrimp/
 }
 ```
 
-Coral-Meeting 的共识结果以 `agent_id: "coral-meeting"` 单独记录一行。
+Coral-Meeting outputs are recorded as dedicated trace steps with `agent_id: "coral-meeting"`.
 
 ---
 
-## 支持的 LLM
+## Supported Models
 
-通过 LiteLLM 统一接口，支持任何兼容模型：
+CrabShrimp uses LiteLLM as a unified adapter, so it can work with any supported backend:
 
-| 场景 | model 写法 |
-|------|-----------|
-| Anthropic 官方直连 | `claude-sonnet-4-6` |
-| OpenAI 兼容代理（转发 Claude） | `openai/claude-sonnet-4-6` |
-| OpenAI 官方 | `gpt-4o` |
-| 本地 Ollama | `ollama/llama3` |
-
----
-
-## 完整配置参考
-
-| 环境变量 | 默认值 | 说明 |
-|----------|--------|------|
-| `CRABSHRIMP_MODEL` | `claude-sonnet-4-6` | LiteLLM 模型标识符 |
-| `CRABSHRIMP_API_BASE` | — | 自定义 API Base（代理服务） |
-| `CRABSHRIMP_STEP_LIMIT` | `50` | 最大执行步数 |
-| `CRABSHRIMP_TOKEN_BUDGET` | `100000` | Token 预算上限 |
-| `CRABSHRIMP_CORAL_MEETING` | `true` | 关键节点是否召开集体会议 |
-| `CRABSHRIMP_CLASSIFY` | `true` | 是否调用 LLM 分类任务 |
-| `CRABSHRIMP_TRACE` | `true` | 是否写入 JSONL Trace 文件 |
-| `CRABSHRIMP_RESOURCE_GUARD` | `true` | 是否启用资源限制 |
-| `CRABSHRIMP_SKILL_EXTRACTION` | `true` | 是否从 Trace 提取 Skill |
-| `CRABSHRIMP_SKILL_INJECTION` | `true` | 是否将 Skill 注入 System Prompt |
-| `CRABSHRIMP_BENCH_THRESHOLD` | `0.5` | 拓扑筛选胜率阈值 |
-| `CRABSHRIMP_HITL` | `false` | 是否启用人在回路（总开关） |
-| `CRABSHRIMP_HITL_ON_PLAN` | `true` | 执行计划检查点 |
-| `CRABSHRIMP_HITL_ON_CRITICAL` | `true` | Coral-Meeting 共识检查点 |
-| `CRABSHRIMP_HITL_ON_VERIFY_FAIL` | `true` | Verifier 失败检查点 |
-| `CRABSHRIMP_TRACE_DIR` | `./traces` | Trace 文件输出目录 |
-| `CRABSHRIMP_DB_PATH` | `./crabshrimp.db` | SQLite 数据库路径 |
+| Scenario | Model String |
+|----------|--------------|
+| Anthropic direct | `claude-sonnet-4-6` |
+| OpenAI-compatible proxy | `openai/claude-sonnet-4-6` |
+| OpenAI direct | `gpt-4o` |
+| Local Ollama | `ollama/llama3` |
 
 ---
 
-## 版本路线图
+## Configuration Reference
 
-| 版本 | 状态 | 核心能力 |
-|------|------|----------|
-| v0.1 | ✅ 已发布 | Dragon-King、Coral-Meeting、ResourceGuard、JSONL Trace |
-| v0.2a | ✅ 已发布 | SQLite 数据持久化 |
-| v0.2b | ✅ 已发布 | 真实结果信号 + Shell-Molting 演化引擎 |
-| v0.3 | ✅ 已发布 | Skill 知识库（提取+注入）+ 拓扑调整 + SyncP2P 接入会议 |
-| v0.3（HITL）| ✅ 已发布 | Human-in-the-Loop：三个检查点，支持人工审核、修改、终止 |
-| v0.4 | 计划中 | Optimizer Agent（分析 Trace 主动重写低效 Prompt）|
-| v0.5 | 计划中 | 沙箱执行环境（Docker / E2B）|
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `CRABSHRIMP_MODEL` | `claude-sonnet-4-6` | LiteLLM model identifier |
+| `CRABSHRIMP_API_BASE` | — | custom API base |
+| `CRABSHRIMP_STEP_LIMIT` | `50` | max execution steps |
+| `CRABSHRIMP_TOKEN_BUDGET` | `100000` | max token budget |
+| `CRABSHRIMP_CORAL_MEETING` | `true` | enable critical-node deliberation |
+| `CRABSHRIMP_CLASSIFY` | `true` | enable task classification |
+| `CRABSHRIMP_TRACE` | `true` | persist JSONL trace files |
+| `CRABSHRIMP_RESOURCE_GUARD` | `true` | enforce step/token limits |
+| `CRABSHRIMP_CONTEXT_ISOLATION` | `true` | isolate critic/verifier history |
+| `CRABSHRIMP_WORKSPACE_ISOLATION` | `true` | allocate scoped workspaces |
+| `CRABSHRIMP_EXEC_ISOLATION` | `true` | enable subprocess execution isolation |
+| `CRABSHRIMP_SKILL_EXTRACTION` | `true` | extract reusable skills after tasks |
+| `CRABSHRIMP_SKILL_INJECTION` | `true` | inject top skills into prompts |
+| `CRABSHRIMP_BENCH_THRESHOLD` | `0.5` | meeting topology threshold |
+| `CRABSHRIMP_HITL` | `false` | master switch for human-in-the-loop |
+| `CRABSHRIMP_HITL_ON_PLAN` | `true` | pause after planning |
+| `CRABSHRIMP_HITL_ON_CRITICAL` | `true` | pause after Coral-Meeting |
+| `CRABSHRIMP_HITL_ON_VERIFY_FAIL` | `true` | pause on verifier failure |
+| `CRABSHRIMP_TRACE_DIR` | `./traces` | trace directory |
+| `CRABSHRIMP_DB_PATH` | `./crabshrimp.db` | SQLite database path |
 
 ---
 
-## 开发
+## Roadmap
+
+| Version | Status | Highlights |
+|---------|--------|------------|
+| v0.1 | released | Dragon-King, Coral-Meeting, ResourceGuard, JSONL trace |
+| v0.2a | released | SQLite persistence |
+| v0.2b | released | Shell-Molting evolution signals |
+| v0.3 | released | skill extraction/injection, topology adaptation, SyncP2P in meetings |
+| v0.3 HITL | released | human checkpoints for planning, consensus, and verification |
+| v0.4 | planned | Optimizer Agent for prompt refinement |
+| v0.5 | planned | stronger sandbox backends such as Docker / E2B |
+
+---
+
+## Development
 
 ```bash
-# 安装开发依赖
+# install dev dependencies
 pip install -e ".[dev]"
 
-# 运行测试（56 个测试用例）
+# run tests
 pytest tests/ -q
 
-# 代码风格检查
+# lint
 ruff check crabshrimp/
 ```
 
+Current test suite: **70 passing tests**.
+
 ---
 
-## 许可证
+## License
 
 MIT License
