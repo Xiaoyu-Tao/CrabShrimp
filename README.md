@@ -1,5 +1,7 @@
 # 虾兵蟹将（CrabShrimp）
 
+[English README](README_EN.md)
+
 <p align="center">
   <img src="./crabshrimp_logo.jpg" alt="CrabShrimp Logo" width="360"/>
 </p>
