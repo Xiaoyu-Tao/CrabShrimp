@@ -14,6 +14,12 @@
 
 ---
 
+## 🗞️ News
+
+- **[2026-03-26]** 🎉 CrabShrimp v0.3.0 is officially released!
+
+---
+
 ## Overview
 
 CrabShrimp is an open-source multi-agent runtime for **collaborative decision-making and autonomous evolution**.
