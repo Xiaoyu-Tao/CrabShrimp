@@ -7,10 +7,11 @@ from crabshrimp.agents.registry import AgentRegistry
 from crabshrimp.communication.blackboard import AsyncBlackboard
 from crabshrimp.config import CrabShrimpConfig
 from crabshrimp.coral_meeting.meeting import CoralMeeting
-from crabshrimp.db import AgentRepository, MeetingRepository, RoleWeightRepository, SkillRepository, TaskRepository, get_connection
+from crabshrimp.db import AgentRepository, MeetingRepository, OptimizationRepository, RoleWeightRepository, SkillRepository, TaskRepository, get_connection
 from crabshrimp.display.rich_panel import RichDisplay
 from crabshrimp.dragon_king.orchestrator import DragonKing
 from crabshrimp.evolution.skill_extractor import SkillExtractor
+from crabshrimp.optimizer.optimizer_agent import OptimizerAgent
 from crabshrimp.tidal_pool.shell_molting import ShellMolting
 from crabshrimp.llm.litellm_client import LiteLLMClient
 from crabshrimp.tidal_pool.human_gate import HumanAborted, HumanGate
@@ -39,6 +40,7 @@ class TaskRunner:
         meeting_repo = MeetingRepository(conn)
         skill_repo = SkillRepository(conn)
         role_weight_repo = RoleWeightRepository(conn)
+        optimization_repo = OptimizationRepository(conn)
 
         # ── 组件装配 ────────────────────────────────────────────
         llm_client = LiteLLMClient(model=cfg.model, api_base=cfg.api_base)
@@ -52,6 +54,7 @@ class TaskRunner:
             workspace_manager=workspace_manager,
             config=cfg,
             skill_repo=skill_repo,
+            optimization_repo=optimization_repo,
         )
         guard = ResourceGuard(step_limit=cfg.step_limit, token_budget=cfg.token_budget)
 
@@ -133,6 +136,20 @@ class TaskRunner:
                 task_category=result.get("category", "general"),
             )
             result["evolution_deltas"] = evolution_deltas
+
+            # ── Prompt 优化（v0.4）───────────────────────────────
+            if cfg.optimizer_enabled:
+                optimizer = OptimizerAgent(
+                    llm_client=llm_client,
+                    agent_repo=agent_repo,
+                    optimization_repo=optimization_repo,
+                )
+                await optimizer.optimize(
+                    task_id=task_id,
+                    task_category=result.get("category", "general"),
+                    steps=collector.get_all_steps(),
+                    evolution_deltas=evolution_deltas,
+                )
 
             # ── Skill 提取（v0.3）────────────────────────────────
             if cfg.skill_extraction_enabled:

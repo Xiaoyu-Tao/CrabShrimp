@@ -116,6 +116,13 @@ def cli():
     default=False,
     help="Skip Verifier failure checkpoint even when HITL is enabled.",
 )
+# ── v0.4 优化器 ────────────────────────────────────────────────
+@click.option(
+    "--optimize",
+    is_flag=True,
+    default=False,
+    help="Enable Optimizer Agent: analyze trace after task and refine role prompts.",
+)
 # ── 显示开关 ───────────────────────────────────────────────────
 @click.option(
     "--no-display",
@@ -147,7 +154,7 @@ def run(task, model, step_limit, token_budget, trace_dir, db_path,
         hitl, no_hitl_plan, no_hitl_critical, no_hitl_verify,
         no_coral_meeting, no_classify, no_trace, no_resource_guard,
         no_context_isolation, no_workspace_isolation, no_exec_isolation,
-        no_display, no_skill_extraction, no_skill_injection, bench_threshold):
+        optimize, no_display, no_skill_extraction, no_skill_injection, bench_threshold):
     """Run a task with the multi-agent team."""
     from crabshrimp.config import CrabShrimpConfig
     from crabshrimp.runtime.runner import TaskRunner
@@ -172,6 +179,7 @@ def run(task, model, step_limit, token_budget, trace_dir, db_path,
         hitl_on_plan=not no_hitl_plan,
         hitl_on_critical=not no_hitl_critical,
         hitl_on_verify_fail=not no_hitl_verify,
+        optimizer_enabled=optimize,
         display_enabled=not no_display,
         trace_dir=trace_dir,
     )
@@ -197,6 +205,8 @@ def run(task, model, step_limit, token_budget, trace_dir, db_path,
         switches.append("[yellow]skill-injection=OFF[/yellow]")
     if config.bench_threshold != 0.5:
         switches.append(f"[cyan]bench-threshold={config.bench_threshold}[/cyan]")
+    if config.optimizer_enabled:
+        switches.append("[bold yellow]optimizer=ON[/bold yellow]")
     if config.hitl_enabled:
         switches.append("[bold magenta]HITL=ON[/bold magenta]")
     switch_line = "  Switches: " + " | ".join(switches) if switches else ""

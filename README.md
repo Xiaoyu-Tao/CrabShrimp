@@ -10,13 +10,14 @@
 
 > *Individual pawns, collective intelligence.*
 
-**v0.3.0** · Python 3.11+ · LiteLLM · MIT License
+**v0.4.0** · Python 3.11+ · LiteLLM · MIT License
 
 ---
 
 ## 🗞️ News
 
-- **[2026-03-26]** 🎉 CrabShrimp v0.3.0 is officially released!
+- **[2026-03-27]** 🎉 CrabShrimp v0.4.0 is officially released!
+- **[2026-03-26]** CrabShrimp v0.3.0 released.
 
 ---
 
@@ -79,6 +80,17 @@ After each task, CrabShrimp analyzes trace signals and updates agent contributio
 | task stopped early | all producing agents | -0.05 |
 
 These contribution scores directly affect future Coral-Meeting voting weights.
+
+### Optimizer Agent (v0.4)
+
+After each task, the Optimizer Agent analyzes trace signals and evolution deltas to identify underperforming roles, then generates targeted system prompt improvements:
+
+- **Trigger**: any agent whose contribution score dropped by more than 0.05, or any step that ended in `failure`
+- **Evaluator roles excluded**: Critic and Verifier are never targeted (they are expected to reject)
+- **Output**: concise behavioral instruction appended to the role's system prompt on the next run
+- **Storage**: `prompt_optimizations` table in SQLite, capped at 5 entries per `(role, task_category)` slot
+- **Injection**: at agent creation time, the top optimization note is appended to the system prompt (same mechanism as Skill injection)
+- **Enabled with**: `--optimize` flag or `CRABSHRIMP_OPTIMIZER=true` env var (off by default)
 
 ### Skill Memory and Injection
 
@@ -358,7 +370,7 @@ CrabShrimp uses LiteLLM as a unified adapter, so it can work with any supported 
 | v0.2b | released | Shell-Molting evolution signals |
 | v0.3 | released | skill extraction/injection, topology adaptation, SyncP2P in meetings |
 | v0.3 HITL | released | human checkpoints for planning, consensus, and verification |
-| v0.4 | planned | Optimizer Agent for prompt refinement |
+| v0.4 | released | Optimizer Agent: analyzes trace signals and refines role prompts automatically |
 | v0.5 | planned | stronger sandbox backends such as Docker / E2B |
 
 ---

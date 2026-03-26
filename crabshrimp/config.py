@@ -49,6 +49,10 @@ class CrabShrimpConfig(BaseModel):
     # 检查点 3：Verifier 判定失败后，人工决定是否继续
     hitl_on_verify_fail: bool = True
 
+    # ── v0.4 优化器 ───────────────────────────────────────────
+    # 是否在任务结束后运行 Optimizer Agent（分析 Trace 改写低效 Prompt）
+    optimizer_enabled: bool = False
+
     # ── 显示 ──────────────────────────────────────────────────
     # 是否启用 Rich 实时面板（终端可视化）
     display_enabled: bool = True
@@ -86,6 +90,7 @@ class CrabShrimpConfig(BaseModel):
             hitl_on_plan=_bool("CRABSHRIMP_HITL_ON_PLAN", True),
             hitl_on_critical=_bool("CRABSHRIMP_HITL_ON_CRITICAL", True),
             hitl_on_verify_fail=_bool("CRABSHRIMP_HITL_ON_VERIFY_FAIL", True),
+            optimizer_enabled=_bool("CRABSHRIMP_OPTIMIZER", False),
             display_enabled=_bool("CRABSHRIMP_DISPLAY", True),
             trace_dir=os.getenv("CRABSHRIMP_TRACE_DIR", "./traces"),
             db_path=os.getenv("CRABSHRIMP_DB_PATH", "./crabshrimp.db"),

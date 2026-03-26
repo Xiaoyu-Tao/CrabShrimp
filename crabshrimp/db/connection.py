@@ -50,6 +50,16 @@ CREATE TABLE IF NOT EXISTS meeting_outcomes (
     topic           TEXT,
     created_at      TEXT
 );
+
+CREATE TABLE IF NOT EXISTS prompt_optimizations (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    role           TEXT NOT NULL,
+    task_category  TEXT NOT NULL,
+    patch          TEXT NOT NULL,
+    source_task_id TEXT,
+    usage_count    INTEGER DEFAULT 0,
+    created_at     TEXT
+);
 """
 
 
