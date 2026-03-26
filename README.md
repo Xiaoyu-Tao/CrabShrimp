@@ -23,6 +23,10 @@
 
 ## Overview
 
+<p align="center">
+  <img src="./pipeline.png" alt="CrabShrimp Architecture" width="860"/>
+</p>
+
 CrabShrimp is an open-source multi-agent runtime for **collaborative decision-making and autonomous evolution**.
 
 Its core thesis is simple:
