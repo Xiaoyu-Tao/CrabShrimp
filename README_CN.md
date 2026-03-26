@@ -3,7 +3,7 @@
 [English README](README_EN.md)
 
 <p align="center">
-  <img src="./crabshrimp_logo.jpg" alt="CrabShrimp Logo" width="360"/>
+  <img src="./logo.jpg" alt="CrabShrimp Logo" width="360"/>
 </p>
 
 > *Individual pawns, collective intelligence.*

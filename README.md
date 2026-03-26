@@ -1,7 +1,11 @@
 # CrabShrimp
 
 <p align="center">
-  <img src="./crabshrimp_logo.jpg" alt="CrabShrimp Logo" width="360"/>
+  <a href="./README_CN.md">中文文档</a>
+</p>
+
+<p align="center">
+  <img src="./logo.jpg" alt="CrabShrimp Logo" width="360"/>
 </p>
 
 > *Individual pawns, collective intelligence.*
