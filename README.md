@@ -1,5 +1,9 @@
 # 虾兵蟹将（CrabShrimp）
 
+<p align="center">
+  <img src="./crabshrimp_logo.jpg" alt="CrabShrimp Logo" width="360"/>
+</p>
+
 > *Individual pawns, collective intelligence.*
 
 **v0.3.0** · Python 3.11+ · LiteLLM · MIT License
