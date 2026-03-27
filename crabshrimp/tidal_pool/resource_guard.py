@@ -9,9 +9,15 @@ class ResourceExhausted(Exception):
 
 
 class ResourceGuard:
-    def __init__(self, step_limit: int = 50, token_budget: int = 100_000):
+    def __init__(
+        self,
+        step_limit: int = 50,
+        token_budget: int = 100_000,
+        warn_ratio: float = 0.8,
+    ):
         self._step_limit = step_limit
         self._token_budget = token_budget
+        self._warn_ratio = warn_ratio
         self._steps_used = 0
         self._tokens_used = 0
 
@@ -19,8 +25,8 @@ class ResourceGuard:
         self._steps_used += 1
         if self._steps_used > self._step_limit:
             raise ResourceExhausted("steps", self._step_limit, self._steps_used)
-        # 只在首次达到 80% 时警告（避免重复打印）
-        warn_at = int(self._step_limit * 0.8)
+        # 只在首次达到警告水位时打印（避免重复）
+        warn_at = int(self._step_limit * self._warn_ratio)
         if self._steps_used == warn_at:
             print(f"[TidalPool] ⚠️  Step warning: {self._steps_used}/{self._step_limit}")
 
@@ -28,7 +34,7 @@ class ResourceGuard:
         self._tokens_used += tokens
         if self._tokens_used > self._token_budget:
             raise ResourceExhausted("tokens", self._token_budget, self._tokens_used)
-        warn_at = int(self._token_budget * 0.8)
+        warn_at = int(self._token_budget * self._warn_ratio)
         if self._tokens_used >= warn_at and (self._tokens_used - tokens) < warn_at:
             print(f"[TidalPool] ⚠️  Token warning: {self._tokens_used}/{self._token_budget}")
 

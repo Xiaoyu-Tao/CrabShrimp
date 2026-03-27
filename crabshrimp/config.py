@@ -39,6 +39,22 @@ class CrabShrimpConfig(BaseModel):
     # Coral-Meeting 拓扑筛选阈值：低于此胜率的 Agent 不参与会议投票
     bench_threshold: float = 0.5
 
+    # ── Coral-Meeting 细粒度参数 ──────────────────────────────
+    # P2P 接收批评消息的最长等待时间（秒）；过短则消息被静默丢弃
+    p2p_receive_timeout: float = 0.05
+    # 发送给被批评方的 critique 消息截断长度（字符数）
+    critique_content_limit: int = 400
+    # 加权投票平票判定精度：两票权重差 < 此值视为平票，触发 LLM 仲裁
+    vote_tie_epsilon: float = 0.01
+
+    # ── Optimizer 触发阈值 ────────────────────────────────────
+    # evolution_delta 低于此值的角色将被触发 prompt 优化分析
+    optimizer_delta_threshold: float = -0.05
+
+    # ── 资源警告水位 ──────────────────────────────────────────
+    # steps / tokens 使用量达到上限的此比例时打印预警（0.0~1.0）
+    resource_warn_ratio: float = 0.8
+
     # ── Human-in-the-Loop ────────────────────────────────────
     # 总开关：是否启用人在回路（默认关闭，不影响自动化流程）
     hitl_enabled: bool = False
@@ -86,6 +102,11 @@ class CrabShrimpConfig(BaseModel):
             skill_extraction_enabled=_bool("CRABSHRIMP_SKILL_EXTRACTION", True),
             skill_injection_enabled=_bool("CRABSHRIMP_SKILL_INJECTION", True),
             bench_threshold=float(os.getenv("CRABSHRIMP_BENCH_THRESHOLD", "0.5")),
+            p2p_receive_timeout=float(os.getenv("CRABSHRIMP_P2P_RECEIVE_TIMEOUT", "0.05")),
+            critique_content_limit=int(os.getenv("CRABSHRIMP_CRITIQUE_CONTENT_LIMIT", "400")),
+            vote_tie_epsilon=float(os.getenv("CRABSHRIMP_VOTE_TIE_EPSILON", "0.01")),
+            optimizer_delta_threshold=float(os.getenv("CRABSHRIMP_OPTIMIZER_DELTA_THRESHOLD", "-0.05")),
+            resource_warn_ratio=float(os.getenv("CRABSHRIMP_RESOURCE_WARN_RATIO", "0.8")),
             hitl_enabled=_bool("CRABSHRIMP_HITL", False),
             hitl_on_plan=_bool("CRABSHRIMP_HITL_ON_PLAN", True),
             hitl_on_critical=_bool("CRABSHRIMP_HITL_ON_CRITICAL", True),

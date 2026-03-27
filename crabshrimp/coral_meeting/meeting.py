@@ -1,6 +1,8 @@
+import asyncio
 from typing import TYPE_CHECKING, List, Optional, Tuple
 from crabshrimp.agents.base import BaseAgent
 from crabshrimp.communication.p2p import SyncP2P
+from crabshrimp.config import CrabShrimpConfig
 from crabshrimp.llm.base import BaseLLMClient
 from crabshrimp.models.message import Message
 from crabshrimp.models.trace import Interaction
@@ -27,10 +29,15 @@ class CoralMeeting:
         llm_client: BaseLLMClient,
         trace_collector: TraceCollector,
         meeting_repo: Optional["MeetingRepository"] = None,
+        config: CrabShrimpConfig | None = None,
     ):
         self._llm = llm_client
         self._trace = trace_collector
         self._meeting_repo = meeting_repo
+        _cfg = config or CrabShrimpConfig()
+        self._p2p_timeout = _cfg.p2p_receive_timeout
+        self._critique_limit = _cfg.critique_content_limit
+        self._tie_epsilon = _cfg.vote_tie_epsilon
 
     async def convene(
         self,
@@ -87,7 +94,7 @@ class CoralMeeting:
                         from_agent=agent.agent_id,
                         to=target_id,
                         type="critique",
-                        content=critique_text[:400],
+                        content=critique_text[:self._critique_limit],
                         task_id=task_id,
                         step_id=step_id,
                     ),
@@ -95,14 +102,28 @@ class CoralMeeting:
 
         # 每个参与者接收发给自己的批评（非阻塞：有多少收多少）
         received: dict[str, list[str]] = {a.agent_id: [] for a in participants}
+        n_expected = len(participants) - 1
         for agent in participants:
-            n_expected = len(participants) - 1
             for _ in range(n_expected):
                 try:
-                    msg = await p2p.receive(agent.agent_id, timeout=0.05)
+                    msg = await p2p.receive(agent.agent_id, timeout=self._p2p_timeout)
                     received[agent.agent_id].append(f"[from {msg.from_agent}] {msg.content}")
-                except Exception:
+                except asyncio.TimeoutError:
+                    # 队列已空，正常退出内层循环
                     break
+                except Exception as exc:
+                    print(
+                        f"  [CoralMeeting] ⚠️  P2P receive error for {agent.agent_id}: {exc}"
+                    )
+                    break
+            n_received = len(received[agent.agent_id])
+            if n_received < n_expected:
+                print(
+                    f"  [CoralMeeting] ⚠️  {agent.role} ({agent.agent_id}) "
+                    f"received {n_received}/{n_expected} critique(s) — "
+                    f"{n_expected - n_received} dropped (p2p_receive_timeout="
+                    f"{self._p2p_timeout}s). Revision may be incomplete."
+                )
 
         # Step 2.5：立场修订（收到批评后，各方可选择更新自己的立场）
         for agent in participants:
@@ -142,7 +163,7 @@ class CoralMeeting:
 
         if len(sorted_by_weight) > 1:
             second_weight = sorted_by_weight[1][1]["weight"]
-            if abs(top_vote["weight"] - second_weight) < 0.01:
+            if abs(top_vote["weight"] - second_weight) < self._tie_epsilon:
                 # 平票 → LLM 仲裁，无明确 winner
                 consensus = await self._arbitrate(topic, positions)
                 winner_agent_id = None

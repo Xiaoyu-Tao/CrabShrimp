@@ -56,7 +56,11 @@ class TaskRunner:
             skill_repo=skill_repo,
             optimization_repo=optimization_repo,
         )
-        guard = ResourceGuard(step_limit=cfg.step_limit, token_budget=cfg.token_budget)
+        guard = ResourceGuard(
+            step_limit=cfg.step_limit,
+            token_budget=cfg.token_budget,
+            warn_ratio=cfg.resource_warn_ratio,
+        )
 
         result: dict = {}
         steps_count = 0
@@ -82,6 +86,7 @@ class TaskRunner:
                     llm_client=llm_client,
                     trace_collector=collector,
                     meeting_repo=meeting_repo,
+                    config=cfg,
                 )
                 human_gate = HumanGate(enabled=cfg.hitl_enabled)
                 dragon_king = DragonKing(
@@ -143,6 +148,7 @@ class TaskRunner:
                     llm_client=llm_client,
                     agent_repo=agent_repo,
                     optimization_repo=optimization_repo,
+                    config=cfg,
                 )
                 await optimizer.optimize(
                     task_id=task_id,

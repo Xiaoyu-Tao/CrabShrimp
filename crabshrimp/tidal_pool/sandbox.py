@@ -34,7 +34,7 @@ class SubprocessSandbox(SandboxInterface):
     子进程隔离沙箱：通过 asyncio 子进程执行命令，工作目录限定在 workspace_dir。
 
     适用于 Executor 角色需要运行代码的场景。
-    不提供内核级别的资源隔离，更强的隔离需 DockerSandbox（v0.2）。
+    不提供内核级别的资源隔离，更强的隔离需 DockerSandbox（v0.5）。
     """
 
     def __init__(self, workspace_dir: Path):
@@ -73,10 +73,10 @@ class SubprocessSandbox(SandboxInterface):
 
 
 class DockerSandbox(SandboxInterface):
-    """Docker 容器隔离沙箱（v0.2 预留接口）。"""
+    """Docker 容器隔离沙箱（v0.5 预留接口）。"""
 
     async def execute(self, command: str, timeout: float = 30.0) -> dict:
-        raise NotImplementedError("DockerSandbox is planned for v0.2.")
+        raise NotImplementedError("DockerSandbox is planned for v0.5.")
 
     async def cleanup(self) -> None:
-        raise NotImplementedError("DockerSandbox is planned for v0.2.")
+        raise NotImplementedError("DockerSandbox is planned for v0.5.")

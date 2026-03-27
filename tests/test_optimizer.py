@@ -7,7 +7,10 @@ import pytest
 from crabshrimp.db.connection import get_connection
 from crabshrimp.db.optimization_repo import OptimizationRepository
 from crabshrimp.models.trace import TraceStep
-from crabshrimp.optimizer.optimizer_agent import DELTA_THRESHOLD, OptimizerAgent
+from crabshrimp.optimizer.optimizer_agent import OptimizerAgent
+
+# Default threshold kept here for test legibility (mirrors CrabShrimpConfig default)
+DELTA_THRESHOLD = -0.05
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────

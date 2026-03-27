@@ -23,7 +23,7 @@ class WorkspaceMode(str, Enum):
 class ExecMode(str, Enum):
     local = "local"           # 不实际执行命令（默认，纯推理角色）
     subprocess = "subprocess"  # asyncio 子进程，工作目录隔离
-    docker = "docker"          # Docker 容器（v0.2 预留）
+    docker = "docker"          # Docker 容器（v0.5 预留）
 
 
 class AgentProfile(BaseModel):

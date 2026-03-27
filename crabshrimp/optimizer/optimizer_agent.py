@@ -6,7 +6,7 @@ Optimizer Agent（v0.4）
 下次同类任务创建同角色 Agent 时，会从该表注入建议（类似 Skill 注入机制）。
 
 触发条件（任一满足即分析）：
-- evolution_deltas 中某 agent_id 的 delta < DELTA_THRESHOLD
+- evolution_deltas 中某 agent_id 的 delta < self._delta_threshold
 - trace 中某步骤 result == "failure"（且角色不是评估者）
 
 每个 (role, task_category) 槽最多 MAX_PER_SLOT 条，防止过拟合。
@@ -15,13 +15,11 @@ from __future__ import annotations
 
 from typing import Dict, List
 
+from crabshrimp.config import CrabShrimpConfig
 from crabshrimp.db.agent_repo import AgentRepository
 from crabshrimp.db.optimization_repo import OptimizationRepository
 from crabshrimp.llm.base import BaseLLMClient
 from crabshrimp.models.trace import TraceStep
-
-# 负向 delta 超过此阈值才触发优化分析
-DELTA_THRESHOLD = -0.05
 
 _SYSTEM_PROMPT = (
     "You are a prompt optimization specialist for a multi-agent AI system. "
@@ -71,10 +69,14 @@ class OptimizerAgent:
         llm_client: BaseLLMClient,
         agent_repo: AgentRepository,
         optimization_repo: OptimizationRepository,
+        config: CrabShrimpConfig | None = None,
     ) -> None:
         self._llm = llm_client
         self._agent_repo = agent_repo
         self._opt_repo = optimization_repo
+        self._delta_threshold = (
+            config.optimizer_delta_threshold if config is not None else -0.05
+        )
 
     async def optimize(
         self,
@@ -132,7 +134,7 @@ class OptimizerAgent:
 
         # 1. evolution_deltas 中 delta 超过阈值的 agent
         for agent_id, delta in evolution_deltas.items():
-            if delta < DELTA_THRESHOLD:
+            if delta < self._delta_threshold:
                 role = self._infer_role(agent_id)
                 if role not in ("critic", "verifier", "coral-meeting"):
                     bad_roles.add(role)
@@ -162,7 +164,7 @@ class OptimizerAgent:
             if self._infer_role(step.agent_id) != role:
                 continue
             delta = evolution_deltas.get(step.agent_id, 0.0)
-            if step.result == "failure" or delta < DELTA_THRESHOLD:
+            if step.result == "failure" or delta < self._delta_threshold:
                 lines.append(
                     f"Input: {step.input[:300]}\n"
                     f"Output: {(step.output or '')[:300]}\n"

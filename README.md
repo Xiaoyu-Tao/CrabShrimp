@@ -296,7 +296,7 @@ crabshrimp/
 
 ## SQLite Persistence
 
-At runtime, CrabShrimp creates `crabshrimp.db` and manages at least these tables:
+At runtime, CrabShrimp creates `crabshrimp.db` and manages 6 tables:
 
 | Table | Purpose |
 |-------|---------|
@@ -305,6 +305,7 @@ At runtime, CrabShrimp creates `crabshrimp.db` and manages at least these tables
 | `meeting_outcomes` | Coral-Meeting winners |
 | `skills` | extracted skill memory with usage counts |
 | `role_weights` | historical win-rate tracking for topology adaptation |
+| `prompt_optimizations` | v0.4 Optimizer-generated prompt refinements per role |
 
 ---
 
@@ -367,6 +368,8 @@ CrabShrimp uses LiteLLM as a unified adapter, so it can work with any supported 
 | `CRABSHRIMP_HITL_ON_PLAN` | `true` | pause after planning |
 | `CRABSHRIMP_HITL_ON_CRITICAL` | `true` | pause after Coral-Meeting |
 | `CRABSHRIMP_HITL_ON_VERIFY_FAIL` | `true` | pause on verifier failure |
+| `CRABSHRIMP_OPTIMIZER` | `false` | enable Optimizer Agent (auto-refine role prompts) |
+| `CRABSHRIMP_DISPLAY` | `true` | enable Rich live terminal panel |
 | `CRABSHRIMP_TRACE_DIR` | `./traces` | trace directory |
 | `CRABSHRIMP_DB_PATH` | `./crabshrimp.db` | SQLite database path |
 
@@ -399,7 +402,7 @@ pytest tests/ -q
 ruff check crabshrimp/
 ```
 
-Current test suite: **70 passing tests**.
+Current test suite: **83 passing tests**.
 
 ---
 
