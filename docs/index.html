@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrabShrimp — 协作决策与自主进化的多智能体运行时</title>
+  <meta name="description" content="CrabShrimp：开源多智能体运行时，将协作与进化设计为单一反馈飞轮。个体棋子，集体智慧。" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC",
+                   "PingFang SC", "Hiragino Sans GB", sans-serif;
+      background: #f7f7f5; color: #1a1a1a; line-height: 1.8; font-size: 16px;
+    }
+    a { color: #d35400; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #f0f0ee; border: 1px solid #e0e0de; border-radius: 4px;
+      padding: 2px 6px; font-family: "SF Mono", "Fira Mono", "Consolas", monospace;
+      font-size: 0.85em; color: #d35400;
+    }
+    .container { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Sticky nav ─────────────────────────────── */
+    .nav-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.97); backdrop-filter: blur(10px);
+      border-bottom: 1px solid #e4e4e4; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .nav-bar .container {
+      display: flex; align-items: center; overflow-x: auto;
+      scrollbar-width: none; gap: 0; padding-top: 0; padding-bottom: 0;
+    }
+    .nav-bar .container::-webkit-scrollbar { display: none; }
+    .nav-bar a {
+      flex-shrink: 0; padding: 13px 18px;
+      font-size: 0.87rem; font-weight: 500; color: #555;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s; white-space: nowrap;
+    }
+    .nav-bar a:hover { color: #d35400; border-bottom-color: #d35400; text-decoration: none; }
+    .nav-home { font-weight: 700; color: #d35400 !important; border-right: 1px solid #e8e8e8; }
+
+    /* ── Header ─────────────────────────────────── */
+    header {
+      background: linear-gradient(160deg, #ffffff 55%, #fef3e2 100%);
+      border-bottom: 1px solid #f5cba7;
+      padding: 64px 0 48px; text-align: center;
+    }
+    header h1 { font-size: 2rem; font-weight: 800; color: #111; line-height: 1.3; }
+    header h1 .hl { color: #d35400; }
+    .subtitle {
+      margin-top: 14px; font-size: 1rem; color: #555;
+      max-width: 620px; margin-left: auto; margin-right: auto; line-height: 1.7;
+    }
+    .affiliation { margin-top: 10px; font-size: 0.88rem; color: #999; }
+    .btn-row {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 20px; border-radius: 7px; font-size: 0.88rem; font-weight: 600;
+      border: 1.5px solid transparent; cursor: pointer;
+      transition: transform .18s, box-shadow .18s, background .18s; text-decoration: none;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.13); text-decoration: none; }
+    .btn-primary { background: #d35400; color: #fff; border-color: #d35400; }
+    .btn-primary:hover { background: #b94600; }
+    .btn-secondary { background: #fff; color: #222; border-color: #d0d0d0; }
+    .btn-secondary:hover { background: #f8f8f8; border-color: #aaa; }
+
+    /* ── Section ────────────────────────────────── */
+    section { padding: 64px 0; scroll-margin-top: 46px; }
+    section.alt { background: #fff; }
+    section + section { border-top: 1px solid #e8e8e8; }
+    h2.section-title {
+      font-size: 1.4rem; font-weight: 700; color: #111;
+      margin-bottom: 22px; padding-bottom: 10px;
+      border-bottom: 3px solid #d35400; display: inline-block;
+    }
+    h3.sub-title { font-size: 1.05rem; font-weight: 700; color: #222; margin: 28px 0 10px; }
+    p { margin-bottom: 14px; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── TL;DR ──────────────────────────────────── */
+    .tldr {
+      background: #fef9f0; border-left: 4px solid #d35400;
+      border-radius: 0 8px 8px 0;
+      padding: 16px 22px; font-size: 1rem; color: #222;
+      margin-bottom: 32px; line-height: 1.75;
+    }
+    .tldr strong { color: #d35400; }
+
+    /* ── Feature cards ──────────────────────────── */
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 22px;
+    }
+    .feature-card {
+      background: #fff; border: 1px solid #e6e6e6; border-radius: 12px;
+      padding: 22px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: transform .22s, box-shadow .22s;
+    }
+    .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+    .feature-icon { font-size: 1.8rem; margin-bottom: 10px; line-height: 1; }
+    .feature-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; color: #111; }
+    .feature-card p { font-size: 0.88rem; color: #555; margin: 0; line-height: 1.65; }
+
+    /* ── Showcase ───────────────────────────────── */
+    .showcase { margin-top: 48px; display: flex; flex-direction: column; gap: 56px; }
+    .showcase-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;
+    }
+    .showcase-row.reverse { direction: rtl; }
+    .showcase-row.reverse > * { direction: ltr; }
+    .showcase-text h4 { font-size: 1.1rem; font-weight: 700; color: #111; margin-bottom: 10px; }
+    .showcase-text p { font-size: 0.93rem; color: #555; line-height: 1.75; margin: 0; }
+    .showcase-box {
+      background: #fff; border: 1px solid #e6e6e6; border-radius: 12px;
+      padding: 28px 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    @media (max-width: 700px) {
+      .showcase-row, .showcase-row.reverse { grid-template-columns: 1fr; direction: ltr; }
+    }
+
+    /* ── Code block ─────────────────────────────── */
+    .code-block {
+      background: #1e1e1e; border-radius: 10px; padding: 20px 24px;
+      font-family: "SF Mono", "Fira Mono", "Consolas", monospace;
+      font-size: 0.85rem; color: #d4d4d4; white-space: pre; overflow-x: auto;
+      line-height: 1.7; margin-top: 14px;
+    }
+    .code-block .cmd { color: #9cdcfe; }
+    .code-block .comment { color: #6a9955; }
+    .code-block .str { color: #ce9178; }
+    .code-block .flag { color: #4ec9b0; }
+
+    /* ── Data tables ────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.9rem; }
+    .data-table th, .data-table td {
+      padding: 10px 14px; border: 1px solid #e6e6e6; text-align: left;
+    }
+    .data-table th { background: #fef3e2; color: #d35400; font-weight: 700; }
+    .data-table tr:hover td { background: #fffaf5; }
+    .data-table td code { font-size: 0.82em; }
+
+    /* ── Team table ─────────────────────────────── */
+    .team-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .team-table th, .team-table td {
+      padding: 10px 14px; border: 1px solid #e6e6e6; font-size: 0.9rem; text-align: left;
+    }
+    .team-table th { background: #fef3e2; color: #d35400; font-weight: 700; }
+    .team-table tr:hover td { background: #fffaf5; }
+
+    /* ── Architecture ───────────────────────────── */
+    .arch-img {
+      width: 100%; border-radius: 12px; margin-top: 20px; display: block;
+      border: 1px solid #e6e6e6; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    /* ── Citation box ───────────────────────────── */
+    .citation-box {
+      background: #f5f5f3; border: 1px solid #e0e0de; border-radius: 8px;
+      padding: 16px 18px; font-family: "SF Mono", "Fira Mono", "Consolas", monospace;
+      font-size: 0.8rem; color: #333; white-space: pre-wrap; word-break: break-all;
+      margin-top: 12px; line-height: 1.65;
+    }
+
+    /* ── Pill links ─────────────────────────────── */
+    .pill-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 7px; font-size: 0.84rem; font-weight: 600;
+      border: 1.5px solid transparent;
+      transition: transform .16s, box-shadow .16s; text-decoration: none;
+    }
+    .pill:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); text-decoration: none; }
+    .pill-orange { background: #d35400; color: #fff; border-color: #d35400; }
+    .pill-orange:hover { background: #b94600; }
+    .pill-out { background: #fff; color: #333; border-color: #d0d0d0; }
+    .pill-out:hover { background: #f5f5f5; border-color: #aaa; }
+
+    /* ── Signal colors ──────────────────────────── */
+    .signal-pos { color: #2e7d32; font-weight: 700; }
+    .signal-neg { color: #c62828; font-weight: 700; }
+
+    /* ── Badges ─────────────────────────────────── */
+    .badge-released {
+      display: inline-block; padding: 2px 8px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 700;
+      background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
+    }
+    .badge-planned {
+      display: inline-block; padding: 2px 8px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 700;
+      background: #fff3e0; color: #e65100; border: 1px solid #ffcc80;
+    }
+
+    /* ── Header logo ────────────────────────────── */
+    .header-logo {
+      width: 140px; max-width: 50%; margin-bottom: 20px; border-radius: 14px;
+    }
+
+    /* ── Footer ─────────────────────────────────── */
+    footer { background: #1c1c1c; color: #999; text-align: center; padding: 28px 24px; font-size: 0.84rem; }
+    footer a { color: #e87b6e; }
+
+    /* ── Responsive ─────────────────────────────── */
+    @media (max-width: 640px) {
+      header h1 { font-size: 1.5rem; }
+      section { padding: 48px 0; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .nav-bar a { padding: 11px 14px; font-size: 0.82rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<header>
+  <div class="container">
+    <img src="logo.jpg" alt="CrabShrimp" class="header-logo" />
+    <h1><span class="hl">CrabShrimp</span></h1>
+    <p class="subtitle">
+      协作决策与自主进化的多智能体运行时<br>
+      协作产生更丰富的轨迹 · 轨迹驱动更强的进化 · 进化实现更好的协作
+    </p>
+    <p class="affiliation">v0.4.0 &nbsp;·&nbsp; Python 3.11+ &nbsp;·&nbsp; LiteLLM &nbsp;·&nbsp; MIT License</p>
+    <div class="btn-row">
+      <a class="btn btn-primary" href="https://github.com/Xiaoyu-Tao/CrabShrimp" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor" style="width:14px;height:14px">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub
+      </a>
+      <a class="btn btn-secondary" href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/README_CN.md" target="_blank" rel="noopener">中文文档</a>
+      <a class="btn btn-secondary" href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/TUTORIAL_CN.md" target="_blank" rel="noopener">使用教程</a>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════ STICKY NAV ═══════════════════ -->
+<nav class="nav-bar">
+  <div class="container">
+    <a href="#" class="nav-home">CrabShrimp</a>
+    <a href="#overview">概览</a>
+    <a href="#features">核心特性</a>
+    <a href="#architecture">架构</a>
+    <a href="#quickstart">快速上手</a>
+    <a href="#roadmap">路线图</a>
+    <a href="#team">团队</a>
+    <a href="#citation">引用</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════ OVERVIEW ═══════════════════ -->
+<section id="overview" class="alt">
+  <div class="container">
+    <div class="tldr">
+      <strong>一句话介绍：</strong>
+      CrabShrimp 是一个开源多智能体运行时，将<strong>协作</strong>与<strong>自主进化</strong>设计为单一反馈飞轮——多个角色智能体协作完成任务，生成丰富的执行轨迹，轨迹驱动进化信号和技能蒸馏，进化后的智能体在下次任务中协作得更好。<strong>个体棋子，集体智慧。</strong>
+    </div>
+
+    <h2 class="section-title">项目简介</h2>
+    <p>
+      大多数多智能体框架只专注于<em>协作</em>或<em>进化</em>其中之一，而非将两者设计为单一反馈回路。CrabShrimp 将它们视为一个飞轮：
+    </p>
+    <p>
+      <strong>更好的协作 → 更丰富的轨迹 → 更强的进化 → 更好的协作</strong>
+    </p>
+    <p>
+      CrabShrimp 通过结构化的任务执行流程编排一组专职智能体（规划者、执行者、批评者、验证者、总结者），配合关键节点审议、任务后进化信号、可复用技能记忆和可选的人工审核检查点。所有状态持久化于 SQLite，每次运行均生成 JSONL 轨迹文件以供完整审计。
+    </p>
+
+    <img src="pipeline.png" alt="CrabShrimp 架构图" class="arch-img" />
+  </div>
+</section>
+
+<!-- ═══════════════════ FEATURES ═══════════════════ -->
+<section id="features">
+  <div class="container">
+    <h2 class="section-title">核心特性</h2>
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon">🐉</div>
+        <h4>Dragon-King 动态编排器</h4>
+        <p>将任务分类为 <code>code</code>、<code>analysis</code>、<code>reasoning</code>、<code>writing</code> 或 <code>general</code>，生成带角色分配的结构化执行计划，并检测关键节点以触发多智能体审议。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🪸</div>
+        <h4>Coral-Meeting 共识协议</h4>
+        <p>针对关键决策的专用五步共识层：表态 → SyncP2P 互评 → 定向反馈 → 基于贡献分的加权投票 → 平票仲裁。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🦀</div>
+        <h4>Shell-Molting 进化引擎</h4>
+        <p>任务结束后分析轨迹信号，更新各智能体的贡献分：获胜 +0.10，验证失败 −0.15，批评拒绝 −0.10，任务提前中止 −0.05。贡献分直接影响后续投票权重。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h4>技能记忆与注入</h4>
+        <p>从成功的轨迹步骤中蒸馏出可复用推理技能，按 <code>(角色, 任务类型)</code> 桶存入 SQLite，在后续运行时注入智能体的系统提示词。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">✨</div>
+        <h4>优化器智能体（v0.4）</h4>
+        <p>分析轨迹信号与进化差值，识别表现不佳的角色，自动生成针对性的系统提示词改进——每次任务后自动执行，无需人工干预。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔱</div>
+        <h4>拓扑自适应</h4>
+        <p>追踪各智能体在 Coral-Meeting 中的历史胜率，根据可配置的 <code>bench_threshold</code> 暂时下架弱势参与者；新智能体默认起始胜率为 1.0。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🌊</div>
+        <h4>Tidal-Pool 资源治理</h4>
+        <p>硬性步骤上限 + 硬性 Token 预算，80% 阈值提前预警，到达上限时通过摘要优雅收尾，确保任何任务都不会失控。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🙋</div>
+        <h4>人机协同（HITL）</h4>
+        <p>可选的审核检查点在规划后、共识后、验证失败后暂停执行，支持批准 / 编辑 / 终止。默认关闭，不影响全自动运行。</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🗄️</div>
+        <h4>SQLite 全量持久化</h4>
+        <p>智能体画像、贡献分、任务记录、Coral-Meeting 结果、提取的技能和提示词优化记录跨会话持久存储，系统随使用时间持续成长。</p>
+      </div>
+
+    </div>
+
+    <div class="showcase">
+
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <h4>🐉 Dragon-King 动态编排</h4>
+          <p>收到任务后，Dragon-King 首先对任务进行分类，然后生成带角色分配的结构化执行计划。规划者、执行者、批评者、验证者、总结者各司其职，在统一编排下协同完成复杂任务，检测到关键节点时自动触发 Coral-Meeting 进行多方审议。</p>
+        </div>
+        <div class="showcase-box">
+          <div style="font-family:'SF Mono','Fira Mono',monospace;font-size:0.82rem;color:#555;line-height:1.8;">
+            <div style="color:#d35400;font-weight:700;margin-bottom:8px;">执行计划示例</div>
+            <div>① <strong>Planner</strong> — 分析任务，制定执行结构</div>
+            <div>② <strong>Executor</strong> — 执行核心子任务</div>
+            <div style="color:#888;">　　↳ 检测到关键节点，触发 Coral-Meeting</div>
+            <div>③ <strong>Critic</strong> — 识别缺陷与风险</div>
+            <div>④ <strong>Verifier</strong> — 独立验证正确性</div>
+            <div>⑤ <strong>Summarizer</strong> — 综合最终输出</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-row reverse">
+        <div class="showcase-text">
+          <h4>🪸 Coral-Meeting 共识协议</h4>
+          <p>当 Dragon-King 检测到关键决策节点时，自动召集 Coral-Meeting：所有参与者先表明立场，再通过 SyncP2P 互相批评，收到定向反馈后进行加权投票，平票时启动仲裁。最终共识写入轨迹文件和持久化存储，全程可审计。</p>
+        </div>
+        <div class="showcase-box">
+          <table style="width:100%;border-collapse:collapse;font-size:0.84rem;">
+            <tr style="background:#fef3e2;"><th style="padding:8px 10px;color:#d35400;text-align:left;border:1px solid #f5cba7;">步骤</th><th style="padding:8px 10px;color:#d35400;text-align:left;border:1px solid #f5cba7;">描述</th></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">1</td><td style="padding:7px 10px;border:1px solid #e6e6e6;">各参与者表明立场</td></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">2</td><td style="padding:7px 10px;border:1px solid #e6e6e6;">通过 SyncP2P 互相批评</td></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">2.5</td><td style="padding:7px 10px;border:1px solid #e6e6e6;">各参与者收到定向批评</td></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">3</td><td style="padding:7px 10px;border:1px solid #e6e6e6;">基于贡献分加权投票</td></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">4</td><td style="padding:7px 10px;border:1px solid #e6e6e6;">平票时启动仲裁</td></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">5</td><td style="padding:7px 10px;border:1px solid #e6e6e6;">共识写入轨迹与持久化</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="showcase-row">
+        <div class="showcase-text">
+          <h4>🦀 Shell-Molting 进化信号</h4>
+          <p>每次任务结束后，Shell-Molting 引擎分析 JSONL 轨迹，根据各智能体的实际表现更新贡献分。获胜的共识立场加分，导致验证失败或被拒绝的上游生产者减分。贡献分直接影响下次 Coral-Meeting 的投票权重，形成持续进化的闭环。</p>
+        </div>
+        <div class="showcase-box">
+          <table style="width:100%;border-collapse:collapse;font-size:0.84rem;">
+            <tr style="background:#fef3e2;"><th style="padding:8px 10px;color:#d35400;text-align:left;border:1px solid #f5cba7;">信号</th><th style="padding:8px 10px;color:#d35400;text-align:left;border:1px solid #f5cba7;">变化</th></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">Coral-Meeting 立场被采纳</td><td style="padding:7px 10px;border:1px solid #e6e6e6;color:#2e7d32;font-weight:700;">+0.10</td></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">验证者返回 NOT VERIFIED</td><td style="padding:7px 10px;border:1px solid #e6e6e6;color:#c62828;font-weight:700;">−0.15</td></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">批评者返回 REJECTED</td><td style="padding:7px 10px;border:1px solid #e6e6e6;color:#c62828;font-weight:700;">−0.10</td></tr>
+            <tr><td style="padding:7px 10px;border:1px solid #e6e6e6;">任务提前中止</td><td style="padding:7px 10px;border:1px solid #e6e6e6;color:#c62828;font-weight:700;">−0.05</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="showcase-row reverse">
+        <div class="showcase-text">
+          <h4>✨ 优化器智能体（v0.4）</h4>
+          <p>v0.4 新增的优化器智能体在任务结束后自动分析轨迹信号与进化差值，识别贡献分下降超过 0.05 或步骤以 failure 结束的角色，生成简洁的行为指令追加到该角色的系统提示词中，并存入 SQLite 的 <code>prompt_optimizations</code> 表，下次运行时自动注入，无需人工干预。</p>
+        </div>
+        <div class="showcase-box">
+          <div style="font-family:'SF Mono','Fira Mono',monospace;font-size:0.82rem;color:#555;line-height:1.8;">
+            <div style="color:#d35400;font-weight:700;margin-bottom:8px;">触发条件</div>
+            <div>• 贡献分降幅 &gt; 0.05</div>
+            <div>• 步骤结果为 <code>failure</code></div>
+            <div style="margin-top:10px;color:#d35400;font-weight:700;">排除规则</div>
+            <div>• Critic / Verifier 永不被优化</div>
+            <div style="margin-top:10px;color:#d35400;font-weight:700;">存储上限</div>
+            <div>• 每个 (角色, 任务类型) 槽最多 5 条</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ ARCHITECTURE ═══════════════════ -->
+<section id="architecture" class="alt">
+  <div class="container">
+    <h2 class="section-title">系统架构</h2>
+    <p>
+      CrabShrimp 围绕五个子系统构建，形成一个闭合的反馈回路：<strong>Dragon-King</strong> 负责任务编排与分类，<strong>Coral-Meeting</strong> 提供关键节点共识，<strong>Shell-Molting</strong> 驱动任务后进化，<strong>Tidal-Pool</strong> 负责资源治理与隔离，<strong>Evolution</strong> 负责技能蒸馏与提示词优化。所有组件通过 Blackboard 共享状态与 SyncP2P 点对点消息队列进行通信。
+    </p>
+
+    <img src="pipeline.png" alt="CrabShrimp 完整架构图" class="arch-img" />
+
+    <h3 class="sub-title">内置角色</h3>
+    <table class="data-table">
+      <thead>
+        <tr><th>角色</th><th>职责</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Planner（规划者）</strong></td><td>分析任务，准备执行结构</td></tr>
+        <tr><td><strong>Executor（执行者）</strong></td><td>执行实际子任务</td></tr>
+        <tr><td><strong>Critic（批评者）</strong></td><td>识别缺陷、风险与遗漏</td></tr>
+        <tr><td><strong>Verifier（验证者）</strong></td><td>独立验证输出的正确性</td></tr>
+        <tr><td><strong>Summarizer（总结者）</strong></td><td>综合最终输出</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="sub-title">JSONL 轨迹格式</h3>
+    <div class="code-block">{
+  <span class="str">"step_id"</span>: <span class="str">"a1b2c3d4-..."</span>,
+  <span class="str">"task_id"</span>: <span class="str">"d213388e"</span>,
+  <span class="str">"agent_id"</span>: <span class="str">"executor-001"</span>,
+  <span class="str">"reasoning"</span>: <span class="str">"..."</span>,
+  <span class="str">"output"</span>: <span class="str">"..."</span>,
+  <span class="str">"interactions"</span>: [
+    { <span class="str">"agent_id"</span>: <span class="str">"critic-001"</span>, <span class="str">"reaction"</span>: <span class="str">"disagree"</span>, <span class="str">"content"</span>: <span class="str">"..."</span> }
+  ],
+  <span class="str">"result"</span>: <span class="str">"success"</span>,
+  <span class="str">"timestamp"</span>: <span class="str">"2026-03-27T10:00:00+00:00"</span>
+}</div>
+    <p style="margin-top:14px;">
+      Coral-Meeting 的输出以 <code>agent_id: "coral-meeting"</code> 作为专属轨迹步骤记录，与普通步骤并排存储。
+    </p>
+    <div class="pill-links">
+      <a class="pill pill-out" href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/README.md" target="_blank" rel="noopener">完整架构文档 →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ QUICK START ═══════════════════ -->
+<section id="quickstart">
+  <div class="container">
+    <h2 class="section-title">快速上手</h2>
+    <p>克隆仓库、配置 API Key，一条命令即可运行：</p>
+    <div class="code-block"><span class="cmd">git clone</span> https://github.com/Xiaoyu-Tao/CrabShrimp
+<span class="cmd">cd</span> CrabShrimp
+<span class="cmd">pip install</span> <span class="flag">-e</span> <span class="str">".[dev]"</span>
+
+<span class="cmd">cp</span> .env.example .env
+<span class="comment"># 在 .env 中填入 API Key</span>
+
+<span class="cmd">crabshrimp run</span> <span class="flag">--task</span> <span class="str">"解释 Transformer 注意力机制的核心思想"</span></div>
+
+    <h3 class="sub-title">最小配置</h3>
+    <div class="code-block"><span class="comment"># Anthropic 直连</span>
+CRABSHRIMP_MODEL=<span class="str">claude-sonnet-4-6</span>
+ANTHROPIC_API_KEY=<span class="str">sk-ant-xxx</span>
+
+<span class="comment"># OpenAI 兼容代理</span>
+CRABSHRIMP_MODEL=<span class="str">openai/claude-sonnet-4-6</span>
+OPENAI_API_KEY=<span class="str">sk-xxx</span>
+CRABSHRIMP_API_BASE=<span class="str">https://api.example.com/v1</span></div>
+
+    <h3 class="sub-title">常用命令示例</h3>
+    <div class="code-block"><span class="comment"># 自定义资源限制</span>
+<span class="cmd">crabshrimp run</span> <span class="flag">--task</span> <span class="str">"..."</span> <span class="flag">--step-limit</span> 10 <span class="flag">--token-budget</span> 50000
+
+<span class="comment"># 切换模型</span>
+<span class="cmd">crabshrimp run</span> <span class="flag">--task</span> <span class="str">"..."</span> <span class="flag">--model</span> gpt-4o
+
+<span class="comment"># 关闭 Coral-Meeting</span>
+<span class="cmd">crabshrimp run</span> <span class="flag">--task</span> <span class="str">"..."</span> <span class="flag">--no-coral-meeting</span>
+
+<span class="comment"># 开启优化器智能体（v0.4）</span>
+<span class="cmd">crabshrimp run</span> <span class="flag">--task</span> <span class="str">"..."</span> <span class="flag">--optimize</span>
+
+<span class="comment"># 开启人机协同</span>
+<span class="cmd">crabshrimp run</span> <span class="flag">--task</span> <span class="str">"..."</span> <span class="flag">--hitl</span>
+
+<span class="comment"># 降低下架阈值</span>
+<span class="cmd">crabshrimp run</span> <span class="flag">--task</span> <span class="str">"..."</span> <span class="flag">--bench-threshold</span> 0.3</div>
+
+    <div class="pill-links">
+      <a class="pill pill-orange" href="https://github.com/Xiaoyu-Tao/CrabShrimp" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor" style="width:13px;height:13px">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        GitHub
+      </a>
+      <a class="pill pill-out" href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/README_CN.md" target="_blank" rel="noopener">中文文档</a>
+      <a class="pill pill-out" href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/TUTORIAL_CN.md" target="_blank" rel="noopener">使用教程</a>
+      <a class="pill pill-out" href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/.env.example" target="_blank" rel="noopener">配置示例</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ ROADMAP ═══════════════════ -->
+<section id="roadmap" class="alt">
+  <div class="container">
+    <h2 class="section-title">路线图</h2>
+    <table class="data-table">
+      <thead>
+        <tr><th>版本</th><th>状态</th><th>主要内容</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>v0.1</strong></td><td><span class="badge-released">已发布</span></td><td>Dragon-King、Coral-Meeting、ResourceGuard、JSONL 轨迹</td></tr>
+        <tr><td><strong>v0.2a</strong></td><td><span class="badge-released">已发布</span></td><td>SQLite 持久化</td></tr>
+        <tr><td><strong>v0.2b</strong></td><td><span class="badge-released">已发布</span></td><td>Shell-Molting 进化信号</td></tr>
+        <tr><td><strong>v0.3</strong></td><td><span class="badge-released">已发布</span></td><td>技能提取/注入、拓扑自适应、SyncP2P</td></tr>
+        <tr><td><strong>v0.3 HITL</strong></td><td><span class="badge-released">已发布</span></td><td>规划、共识、验证失败的人工审核检查点</td></tr>
+        <tr><td><strong>v0.4</strong></td><td><span class="badge-released">已发布</span></td><td>优化器智能体：自动分析轨迹信号并改进角色提示词</td></tr>
+        <tr><td><strong>v0.5</strong></td><td><span class="badge-planned">规划中</span></td><td>更强的沙箱后端（Docker / E2B）</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════ TEAM ═══════════════════ -->
+<section id="team">
+  <div class="container">
+    <h2 class="section-title">团队</h2>
+    <p>CrabShrimp 由以下成员构建与维护，基于 MIT 协议开源。</p>
+    <table class="team-table">
+      <thead>
+        <tr><th>角色</th><th>成员</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>核心开发 &amp; 维护</td><td>Xiaoyu Tao</td></tr>
+        <tr><td>指导教师</td><td>Mingyue Cheng  ·  Qi Liu  ·  Enhong Chen</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════ CITATION ═══════════════════ -->
+<section id="citation" class="alt">
+  <div class="container">
+    <h2 class="section-title">引用</h2>
+    <div class="citation-box">@misc{crabshrimp2026,
+  title        = {CrabShrimp: A Multi-Agent Runtime for Collaborative Decision-Making and Autonomous Evolution},
+  author       = {Tao, Xiaoyu and Cheng, Mingyue and Liu, Qi and Chen, Enhong},
+  year         = {2026},
+  howpublished = {\url{https://github.com/Xiaoyu-Tao/CrabShrimp}},
+  note         = {Individual pawns, collective intelligence.}
+}</div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer>
+  <div class="container">
+    <p>© 2026 CrabShrimp Authors &nbsp;·&nbsp; MIT License</p>
+    <p style="font-size:0.78rem;color:#555;margin-top:6px;">
+      <a href="https://github.com/Xiaoyu-Tao/CrabShrimp" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/README_CN.md" target="_blank" rel="noopener">中文文档</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/TUTORIAL_CN.md" target="_blank" rel="noopener">使用教程</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
