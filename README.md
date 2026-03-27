@@ -1,6 +1,13 @@
 # CrabShrimp
 
 <p align="center">
+  <a href="https://xiaoyu-tao.github.io/CrabShrimp/"><img src="https://img.shields.io/badge/Project-Home-orange.svg" alt="Project Home"></a>
+  <a href="https://github.com/Xiaoyu-Tao/CrabShrimp/stargazers"><img src="https://img.shields.io/github/stars/Xiaoyu-Tao/CrabShrimp" alt="GitHub Repo stars"></a>
+  <a href="https://github.com/Xiaoyu-Tao/CrabShrimp/network/members"><img src="https://img.shields.io/github/forks/Xiaoyu-Tao/CrabShrimp" alt="GitHub forks"></a>
+  <a href="https://xiaoyu-tao.github.io/CrabShrimp/"><img src="https://img.shields.io/badge/docs-latest-blue.svg" alt="Docs"></a>
+</p>
+
+<p align="center">
   <a href="./README_CN.md">中文文档</a> · <a href="./TUTORIAL_CN.md">使用教程</a>
 </p>
 
