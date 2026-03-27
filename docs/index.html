@@ -69,6 +69,20 @@
     .btn-primary:hover { background: #b94600; }
     .btn-secondary { background: #fff; color: #222; border-color: #d0d0d0; }
     .btn-secondary:hover { background: #f8f8f8; border-color: #aaa; }
+    .btn-split {
+      display: inline-flex; align-items: stretch; border-radius: 7px; overflow: hidden;
+      border: 1.5px solid #444; cursor: pointer;
+      transition: transform .18s, box-shadow .18s; text-decoration: none;
+    }
+    .btn-split:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.20); text-decoration: none; }
+    .btn-split-left {
+      background: #3a3a3a; color: #fff;
+      padding: 9px 14px; font-size: 0.88rem; font-weight: 600;
+    }
+    .btn-split-right {
+      background: #d35400; color: #fff;
+      padding: 9px 14px; font-size: 0.88rem; font-weight: 600;
+    }
 
     /* ── Section ────────────────────────────────── */
     section { padding: 64px 0; scroll-margin-top: 46px; }
@@ -235,6 +249,9 @@
       </a>
       <a class="btn btn-secondary" href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/README_CN.md" target="_blank" rel="noopener">中文文档</a>
       <a class="btn btn-secondary" href="https://github.com/Xiaoyu-Tao/CrabShrimp/blob/main/TUTORIAL_CN.md" target="_blank" rel="noopener">使用教程</a>
+      <a class="btn-split" href="https://xiaoyu-tao.github.io/CrabShrimp/" target="_blank" rel="noopener">
+        <span class="btn-split-left">Project</span><span class="btn-split-right">Home</span>
+      </a>
     </div>
   </div>
 </header>
